@@ -66,14 +66,14 @@ function countProcess( [string]$process ) {
 #--------------
 # Main
 
-$waitTime = 5
+$waitTime = 900  # 15mn
 $awsCmd = "aws"
-Write-Host "DirectoryListing : $directoryListing"
+
 foreach ($dir in $directoryListing) {
   # aws cli command and args
-  $basename = (Get-Item $dir).BaseName
-  $awsCmdArgs = "s3 sync $dir s3://$bucketName/$basename --dryrun --only-show-errors"
-  $logFile = "aws_s3_sync_" + $basename + "-" + $date + ".log"
+  $baseName = (Get-Item $dir).BaseName
+  $awsCmdArgs = "s3 sync $dir s3://$bucketName/$baseName"
+  $logFile = "aws_s3_sync_" + $baseName + "-" + $date + ".log"
   [int]$n = countProcess -process $awsCmd
 
   while ($n -ge $maxConcurrentCmd) {
@@ -84,7 +84,6 @@ foreach ($dir in $directoryListing) {
 
   Write-Host "Starting sync for directory: $dir"
   Write-Host "running : $awsCmd $awsCmdArgs"
-  # Start-Process $awsCmd -ArgumentList $awsCmdArgs -WorkingDirectory $workingDir -RedirectStandardOutput $logFile
   Start-Process $awsCmd -ArgumentList $awsCmdArgs
   Start-Sleep -s 3
 }
