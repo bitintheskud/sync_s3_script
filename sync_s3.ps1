@@ -44,18 +44,16 @@ param (
 # Variables
 
 # Logs parameters
-$workingDir = C:\Temp
+$workingDir = "C:\Temp"
 
 # date format is (day)(month)(year)-(hour)(minute)(second)
 $date = Get-Date  -format dMyyyy-hhhmss
 
 # list the directory to sync and count them.
-$directoryListing = Get-ChildItem -Path C:\  -Directory | Select  -ExpandProperty FullName
-$numberOfDirectoryInListing = (Get-ChildItem -Path C:\  -Directory | measure).count
+$directoryListing = Get-ChildItem -Path $exportFolder  -Directory | Select  -ExpandProperty FullName
+$numberOfDirectoryInListing = (Get-ChildItem -Path $exportFolder  -Directory | measure).count
 
-# aws cli command and args
-$awsCmd = "aws"
-$awsCmdArgs = "s3 sync $exportFolder s3://$bucketName --dryrun --only-show-errors"
+
 
 
 #------
@@ -73,20 +71,24 @@ function countProcess( [string]$process ) {
 # Main
 
 $waitTime = 5
-$counter = 0
+$awsCmd = "aws"
+Write-Host "DirectoryListing : $directoryListing"
 foreach ($dir in $directoryListing) {
-  while ($counter -lt $numberOfDirectoryInListing) {
-    [int]$y = countProcess -process $awsCmd
-    if ($y -lt $maxConcurrentCmd) {
-      $logFile = "aws_s3_sync_" + $dir + "-" + $date + ".log"
-      Write-Host "Starting sync for directory: $dir"
-      Write-Host "running : $awsCmd $awsCmdArgs"
-      #Start-Process $awsCmd -ArgumentList $awsCmdArgs -WorkingDirectory $workingDir -RedirectStandardOutput $logFile
-      $counter++
-      Start-Sleep -s 15
-    } else {
-      Write-Host "Waiting $waitTime second"
-      Start-Sleep -s $waitTime
-    }
+  # aws cli command and args
+  $basename = (Get-Item $dir).BaseName
+  $awsCmdArgs = "s3 sync $dir s3://$bucketName/$basename --dryrun --only-show-errors"
+  $logFile = "aws_s3_sync_" + $basename + "-" + $date + ".log"
+  [int]$y = countProcess -process $awsCmd
+
+  while ($y -ge $maxConcurrentCmd) {
+    Write-Host "Too much sync command running - Waiting $waitTime second"
+    Start-Sleep -s $waitTime
+	  [int]$y = countProcess -process $awsCmd
   }
+
+  Write-Host "Starting sync for directory: $dir"
+  Write-Host "running : $awsCmd $awsCmdArgs"
+  # Start-Process $awsCmd -ArgumentList $awsCmdArgs -WorkingDirectory $workingDir -RedirectStandardOutput $logFile
+  Start-Process $awsCmd -ArgumentList $awsCmdArgs
+  Start-Sleep -s 3
 }
