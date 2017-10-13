@@ -3,19 +3,18 @@ Author : Alban MUSSI
 Date   : 12 oct 17
 
 Why this script:
-We needed a script to periodically sync dir before going live on AWS.
-This script look at directory in the root dir to sync and run aws s3 sync in //
-for those particular directory.
+We needed a script to periodically sync dir from on prem to S3.
+This script will list directory in the local directory and run "aws s3 sync" command
+in parallele.
 
-for example if you have :
+for example if you have 3 directory :
 
 rootdir/dir1
 rootdir/dir2
 rootdir/dir3
 
-then the script will run 3 instance of "aws s3 sync" command and no more than
-the maxConcurrentCmd number you provide to avoid contention.
-
+The script will run 3 instances of "aws s3 sync" command. The limit of command
+you can run is provided by the maxConcurrentCmd option (no more than)
 
 This script does the following:
 
@@ -53,10 +52,9 @@ $directoryListing = Get-ChildItem -Path C:\  -Directory | Select  -ExpandPropert
 $numberOfDirectoryInListing = (Get-ChildItem -Path C:\  -Directory | measure).count
 
 # aws cli command and args
-#$awsCmd = "aws"
-#$awsCmdArgs = "s3 sync $exportFolder s3://$bucketName --dryrun"
-$awsCmd = "notepad"
-$awsCmdArgs = "C:\Users\amussi\out.txt"
+$awsCmd = "aws"
+$awsCmdArgs = "s3 sync $exportFolder s3://$bucketName --dryrun"
+
 
 $waitTime = 5
 $counter = 0
