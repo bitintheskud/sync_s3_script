@@ -39,6 +39,28 @@ param (
   [int]$maxConcurrentCmd
 )
 
+
+#-----
+# Variables
+
+# Logs parameters
+$workingDir = C:\Temp
+
+# date format is (day)(month)(year)-(hour)(minute)(second)
+$date = Get-Date  -format dMyyyy-hhhmss
+
+# list the directory to sync and count them.
+$directoryListing = Get-ChildItem -Path C:\  -Directory | Select  -ExpandProperty FullName
+$numberOfDirectoryInListing = (Get-ChildItem -Path C:\  -Directory | measure).count
+
+# aws cli command and args
+$awsCmd = "aws"
+$awsCmdArgs = "s3 sync $exportFolder s3://$bucketName --dryrun --only-show-errors"
+
+
+#------
+# Functions
+
 # Detect the number of instance for a command running on the system.
 # if > x  return True else return False
 function countProcess( [string]$process ) {
@@ -47,14 +69,8 @@ function countProcess( [string]$process ) {
   return [int]$n
 }
 
-# Generate a list of directory to sync and how much.
-$directoryListing = Get-ChildItem -Path C:\  -Directory | Select  -ExpandProperty FullName
-$numberOfDirectoryInListing = (Get-ChildItem -Path C:\  -Directory | measure).count
-
-# aws cli command and args
-$awsCmd = "aws"
-$awsCmdArgs = "s3 sync $exportFolder s3://$bucketName --dryrun"
-
+#------
+# Main
 
 $waitTime = 5
 $counter = 0
@@ -62,11 +78,12 @@ foreach ($dir in $directoryListing) {
   while ($counter -lt $numberOfDirectoryInListing) {
     [int]$y = countProcess -process $awsCmd
     if ($y -lt $maxConcurrentCmd) {
+      $logFile = "aws_s3_sync_" + $dir + "-" + $date + ".log"
       Write-Host "Starting sync for directory: $dir"
       Write-Host "running : $awsCmd $awsCmdArgs"
-      Start-Process $awsCmd -ArgumentList $awsCmdArgs
+      #Start-Process $awsCmd -ArgumentList $awsCmdArgs -WorkingDirectory $workingDir -RedirectStandardOutput $logFile
       $counter++
-      Start-Sleep -s 3
+      Start-Sleep -s 15
     } else {
       Write-Host "Waiting $waitTime second"
       Start-Sleep -s $waitTime
