@@ -9,9 +9,9 @@ in parallele.
 
 for example if you have 3 directory :
 
-rootdir/dir1
-rootdir/dir2
-rootdir/dir3
+myimages/dir1
+myimages/dir2
+myimages/dir3
 
 The script will run 3 instances of "aws s3 sync" command. The limit of command
 you can run is provided by the maxConcurrentCmd option (no more than)
@@ -39,8 +39,7 @@ param (
   [int]$maxConcurrentCmd
 )
 
-
-#-----
+#--------------
 # Variables
 
 # Logs parameters
@@ -53,10 +52,7 @@ $date = Get-Date  -format dMyyyy-hhhmss
 $directoryListing = Get-ChildItem -Path $exportFolder  -Directory | Select  -ExpandProperty FullName
 $numberOfDirectoryInListing = (Get-ChildItem -Path $exportFolder  -Directory | measure).count
 
-
-
-
-#------
+#--------------
 # Functions
 
 # Detect the number of instance for a command running on the system.
@@ -67,7 +63,7 @@ function countProcess( [string]$process ) {
   return [int]$n
 }
 
-#------
+#--------------
 # Main
 
 $waitTime = 5
@@ -78,12 +74,12 @@ foreach ($dir in $directoryListing) {
   $basename = (Get-Item $dir).BaseName
   $awsCmdArgs = "s3 sync $dir s3://$bucketName/$basename --dryrun --only-show-errors"
   $logFile = "aws_s3_sync_" + $basename + "-" + $date + ".log"
-  [int]$y = countProcess -process $awsCmd
+  [int]$n = countProcess -process $awsCmd
 
-  while ($y -ge $maxConcurrentCmd) {
+  while ($n -ge $maxConcurrentCmd) {
     Write-Host "Too much sync command running - Waiting $waitTime second"
     Start-Sleep -s $waitTime
-	  [int]$y = countProcess -process $awsCmd
+	  [int]$n = countProcess -process $awsCmd
   }
 
   Write-Host "Starting sync for directory: $dir"
