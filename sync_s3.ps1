@@ -46,6 +46,8 @@ param (
 $workingDir = "C:\Scripts\sync_s3"
 $logDir = "C:\logs\sync_s3"
 $logFile = "$logDir\sync_s3.log"
+$date = Get-Date -format ddMy-Hmmss
+
 
 # list the directory to sync and count them.
 $directoryListing = Get-ChildItem -Path $exportFolder  -Directory | Select  -ExpandProperty FullName
@@ -80,19 +82,18 @@ function logMsg([string]$msg ) {
 $waitTime = 900  # 15mn
 $awsCmd = "aws"
 
-
 foreach ($dir in $directoryListing) {
   # aws cli command and args
   $baseName = (Get-Item $dir).BaseName
   # Output will be log into a log file separetly
   $standardOutput = "$logDir\aws_s3_sync_" + $baseName + "-" + $date + ".log"
-  $standardError = "$logDir\aws_s3_sync_" + $baseName + "-" + $date + ".log"
+  $standardError = "$logDir\aws_s3_sync_" + $baseName + "-" + $date + ".errors.log"
   $awsCmdArgs = "s3 sync $dir s3://$bucketName/$baseName --only-show-errors"
 
   # We count the number of process running and wait if necessary
   [int]$n = countProcess -process $awsCmd
-  while ($n -ge $maxConcurrentCmd)
-    $out = (dateLog) + " INFO: Too much sync command running - Waiting $waitTime second"
+  while ($n -ge $maxConcurrentCmd) {
+    $out = (dateLog) + " INFO: reach max sync command running ($n) - Waiting $waitTime second"
     logMsg($out)
     Start-Sleep -s $waitTime
 	  [int]$n = countProcess -process $awsCmd
