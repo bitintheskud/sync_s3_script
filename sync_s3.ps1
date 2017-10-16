@@ -43,10 +43,9 @@ param (
 # Variables
 
 # Logs parameters
-$workingDir = "C:\Temp"
-
-# date format is (day)(month)(year)-(hour)(minute)(second)
-$date = Get-Date  -format dMyyyy-hhhmss
+$workingDir = "C:\Scripts\sync_s3"
+$logDir = "C:\logs\sync_s3"
+$logFile = "$logDir\sync_s3.log"
 
 # list the directory to sync and count them.
 $directoryListing = Get-ChildItem -Path $exportFolder  -Directory | Select  -ExpandProperty FullName
@@ -59,8 +58,20 @@ $numberOfDirectoryInListing = (Get-ChildItem -Path $exportFolder  -Directory | m
 # if > x  return True else return False
 function countProcess( [string]$process ) {
   $n = @(get-process -ea silentlycontinue $process).count
-  Write-Host "enter countProcess function. return : $n"
   return [int]$n
+}
+
+# Return Date for for log
+function dateLog() {
+  Get-Date -format "dd/M/y - hh:mm:ss"
+}
+
+# Log message
+function logMsg([string]$msg ) {
+  # Write on terminal
+  Write-Host $msg
+  # Write to file
+  Add-Content $logFile -Value $out
 }
 
 #--------------
@@ -69,21 +80,30 @@ function countProcess( [string]$process ) {
 $waitTime = 900  # 15mn
 $awsCmd = "aws"
 
+
 foreach ($dir in $directoryListing) {
   # aws cli command and args
   $baseName = (Get-Item $dir).BaseName
-  $awsCmdArgs = "s3 sync $dir s3://$bucketName/$baseName"
-  $logFile = "aws_s3_sync_" + $baseName + "-" + $date + ".log"
-  [int]$n = countProcess -process $awsCmd
+  # Output will be log into a log file separetly
+  $standardOutput = "$logDir\aws_s3_sync_" + $baseName + "-" + $date + ".log"
+  $standardError = "$logDir\aws_s3_sync_" + $baseName + "-" + $date + ".log"
+  $awsCmdArgs = "s3 sync $dir s3://$bucketName/$baseName --only-show-errors"
 
-  while ($n -ge $maxConcurrentCmd) {
-    Write-Host "Too much sync command running - Waiting $waitTime second"
+  # We count the number of process running and wait if necessary
+  [int]$n = countProcess -process $awsCmd
+  while ($n -ge $maxConcurrentCmd)
+    $out = (dateLog) + " INFO: Too much sync command running - Waiting $waitTime second"
+    logMsg($out)
     Start-Sleep -s $waitTime
 	  [int]$n = countProcess -process $awsCmd
   }
 
-  Write-Host "Starting sync for directory: $dir"
-  Write-Host "running : $awsCmd $awsCmdArgs"
-  Start-Process $awsCmd -ArgumentList $awsCmdArgs
-  Start-Sleep -s 3
+  $out = (dateLog) + " INFO: Starting sync for directory: $dir"
+  logMsg($out)
+
+  $out = (dateLog) + " INFO: running $awsCmd $awsCmdArgs"
+  logMsg($out)
+
+  Start-Process $awsCmd -ArgumentList $awsCmdArgs -RedirectStandardOutput $standardOutput -RedirectStandardError $standardError
+  Start-Sleep 5
 }
