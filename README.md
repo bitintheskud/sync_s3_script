@@ -20,8 +20,8 @@ d-----       13/10/2017     17:42                tennis
 d-----       13/10/2017     17:42                volley
 ```
 
-The script can run up to 4 instances of "aws s3 sync" command (or less), each
-one will sync one of the directory (football, motogp, etc).
+In this case, the script can run up to 4 instances of "aws s3 sync" command
+(or less), each one will sync one of the directory (football, motogp, etc).
 
 The limit of command you can run is provided by the *maxConcurrentCmd* option.
 
