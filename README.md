@@ -45,12 +45,17 @@ See: http://docs.aws.amazon.com/cli/latest/topic/s3-config.html
 
 ## How to use the script
 
+### from the powershell console
+
 Just ran the command in PS shell.
 
 Example:
 ```powershell
 ./sync_s3.ps1 -rootFolder 'D:\Shares\images' -bucketName somebucketname -maxConcurrentCmd 5
 ```
+### from the task scheduler
+
+Have a look to the example in this repositorie
 
 ## What's next
 
